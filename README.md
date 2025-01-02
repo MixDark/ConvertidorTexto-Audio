@@ -3,6 +3,13 @@
 ## Descripción
 Una aplicación de escritorio que permite convertir texto a audio y reproducirlo.
 
+## Capturas de pantalla
+![image](https://github.com/user-attachments/assets/7cea5335-2ea9-4ebb-82ea-ea7674758090)
+
+![image](https://github.com/user-attachments/assets/32e52b1f-99bd-4325-b4f9-6693f770197e)
+
+![image](https://github.com/user-attachments/assets/18edcf46-3f86-4d23-8cdb-ddf49dbf27b1)
+
 ## Características
 - Soporte para textos en inglés y español
 - Permite elegir la ubicación de guardado del archivo
@@ -36,11 +43,3 @@ python interfaz.py
 ## Estructura del proyecto:
 
 ![image](https://github.com/user-attachments/assets/c1c4bfed-b4a9-4fa9-9210-ec0bbf8bef8b)
-
-
-## Capturas de pantalla:
-![image](https://github.com/user-attachments/assets/7cea5335-2ea9-4ebb-82ea-ea7674758090)
-
-![image](https://github.com/user-attachments/assets/32e52b1f-99bd-4325-b4f9-6693f770197e)
-
-![image](https://github.com/user-attachments/assets/18edcf46-3f86-4d23-8cdb-ddf49dbf27b1)
