@@ -4,11 +4,11 @@
 Una aplicación de escritorio que permite convertir texto a audio y reproducirlo.
 
 ## Capturas de pantalla
-![image](https://github.com/user-attachments/assets/7cea5335-2ea9-4ebb-82ea-ea7674758090)
+![image](https://github.com/user-attachments/assets/67ae810d-8c98-4c35-a847-58d33c4da9b2)
 
-![image](https://github.com/user-attachments/assets/32e52b1f-99bd-4325-b4f9-6693f770197e)
+![image](https://github.com/user-attachments/assets/34e0f3ff-aa31-4fa4-bb17-e8ea37dddfc9)
 
-![image](https://github.com/user-attachments/assets/18edcf46-3f86-4d23-8cdb-ddf49dbf27b1)
+![image](https://github.com/user-attachments/assets/7cddafea-7461-4b56-b8b3-026975c47127)
 
 ## Características
 - Soporte para textos en inglés y español
@@ -19,12 +19,14 @@ Una aplicación de escritorio que permite convertir texto a audio y reproducirlo
 
 ## Tecnologías utilizadas
 - Python 3.x
-- Tkinter
+- PyQt6
 - gTTS
-- Pygame
 
 ## Requerimientos
-- Python 3.x 
+- Python 3.x
+- PyQt6
+- gTTS
+- Pygame
 
 ## Instalación desde CLI
 1. Clona el repositorio: 
@@ -42,4 +44,5 @@ python interfaz.py
 
 ## Estructura del proyecto:
 
-![image](https://github.com/user-attachments/assets/c1c4bfed-b4a9-4fa9-9210-ec0bbf8bef8b)
+![image](https://github.com/user-attachments/assets/a9533adf-27cb-486b-b74f-f4f91b2b0965)
+
