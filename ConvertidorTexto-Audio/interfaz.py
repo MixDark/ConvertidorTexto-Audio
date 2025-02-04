@@ -1,77 +1,223 @@
-from tkinter import Tk, Label, Button, Text, filedialog, messagebox, Frame, Scrollbar, RIGHT, Y
+import sys
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                            QHBoxLayout, QPushButton, QTextEdit, QLabel, 
+                            QFileDialog, QMessageBox, QProgressBar)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QClipboard, QIcon
 from convertidor import AudioLogic
 
-class AudioApp:
-    def __init__(self, master):
-        self.master = master
-        master.title("Convertidor de texto a audio")
+class ConversionThread(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
+    error = pyqtSignal(str)
 
-        # Fijar tamaño de la ventana y centrarla
-        window_width = 440
-        window_height = 260
-        screen_width = master.winfo_screenwidth()
-        screen_height = master.winfo_screenheight()
-        x_cordinate = int((screen_width / 2) - (window_width / 2))
-        y_cordinate = int((screen_height / 2) - (window_height / 2))
-        master.geometry(f"{window_width}x{window_height}+{x_cordinate}+{y_cordinate}")
-        master.resizable(False, False)  # Evitar que la ventana se redimensione
+    def __init__(self, audio_logic, text, file_path):
+        super().__init__()
+        self.audio_logic = audio_logic
+        self.text = text
+        self.file_path = file_path
 
-        self.label = Label(master, text="Ingrese el texto o haga clic en pegar para agregarlo:")
-        self.label.pack(pady=10)
+    def run(self):
+        try:
+            # Conectar las señales del AudioLogic
+            self.audio_logic.progress_updated.connect(self.progress.emit)
+            self.audio_logic.conversion_finished.connect(self.finished.emit)
+            self.audio_logic.error_occurred.connect(self.error.emit)
+            
+            # Realizar la conversión
+            self.audio_logic.save_audio(self.text, self.file_path)
+        except Exception as e:
+            self.error.emit(str(e))
 
-        # Frame para la caja de texto con scroll
-        text_frame = Frame(master)
-        text_frame.pack()
+class AudioApp(QMainWindow):
+    def __init__(self):
+                super().__init__()
+                self.audio_logic = AudioLogic()
+                self.initUI()
+                self.setWindowIcon(QIcon('icono.png'))  
+                self.setStyleSheet("""
+                    QMainWindow {
+                        background-color: #f0f0f0;
+                    }
+                    QLabel {
+                        color: #333333;
+                        font-size: 14px;
+                        margin-bottom: 5px;
+                    }
+                    QTextEdit {
+                        background-color: white;
+                        color: black;
+                        border: 1px solid #cccccc;
+                        border-radius: 4px;
+                        padding: 5px;
+                        font-size: 14px;
+                    }
+                    QPushButton {
+                        background-color: #2196F3;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 8px 16px;
+                        font-size: 12px;
+                        margin: 0px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #1976D2;
+                    }
+                    QPushButton:disabled {
+                        background-color: #BDBDBD;
+                    }
+                    QProgressBar {
+                        border: 1px solid #cccccc;
+                        border-radius: 4px;
+                        text-align: center;
+                        height: 20px;
+                        margin: 10px 0px;
+                    }
+                    QProgressBar::chunk {
+                        background-color: #2196F3;
+                    }
+                    QMessageBox {
+                        background-color: #f0f0f0;
+                    }
+                    QMessageBox QLabel {
+                        color: #333333;
+                    }
+                    QMessageBox QPushButton {
+                        background-color: #2196F3;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 6px 12px;
+                        margin: 0px 5px;
+                        min-width: 60px;
+                    }
+                    QMessageBox QPushButton:hover {
+                        background-color: #1976D2;
+                    }
+                """)
 
-        self.scrollbar = Scrollbar(text_frame)
-        self.scrollbar.pack(side=RIGHT, fill=Y)
+    def initUI(self):
+            self.setWindowTitle('Convertidor de texto a audio')
+            self.setFixedSize(600, 400)  # Aumentado el tamaño de la ventana
 
-        self.text_box = Text(text_frame, height=10, width=50, yscrollcommand=self.scrollbar.set)
-        self.text_box.pack()
-        self.scrollbar.config(command=self.text_box.yview)
+            # Widget central y layout principal
+            central_widget = QWidget()
+            self.setCentralWidget(central_widget)
+            layout = QVBoxLayout(central_widget)
+            layout.setContentsMargins(20, 20, 20, 20)  # Márgenes generales
 
-        # Frame para botones en una sola fila
-        button_frame = Frame(master)
-        button_frame.pack(pady=15)
+            # Label
+            label = QLabel('Ingrese el texto o haga clic en pegar para agregarlo desde el portapeles:')
+            layout.addWidget(label)
 
-        # Botón para pegar texto desde el portapapeles
-        self.paste_button = Button(button_frame, text="Pegar", command=self.paste_text)
-        self.paste_button.pack(side="left", padx=5)
+            # TextEdit
+            self.text_edit = QTextEdit()
+            layout.addWidget(self.text_edit)
 
-        self.save_button = Button(button_frame, text="Generar", command=self.save_audio)
-        self.save_button.pack(side="left", padx=5)
+            # Progress Bar
+            self.progress_bar = QProgressBar()
+            self.progress_bar.setVisible(False)
+            layout.addWidget(self.progress_bar)
 
-        self.play_button = Button(button_frame, text="Reproducir", command=self.play_audio, state='disabled')
-        self.play_button.pack(side="left", padx=5)
+            # Contenedor para los botones
+            button_container = QWidget()
+            button_layout = QHBoxLayout(button_container)
+            button_layout.setSpacing(20)  # Espacio entre botones
+            button_layout.setContentsMargins(0, 10, 0, 10)  # Márgenes del contenedor de botones
+            
+            # Crear botones con tamaño fijo
+            self.paste_button = QPushButton('Pegar')
+            self.generate_button = QPushButton('Generar')
+            self.play_button = QPushButton('Reproducir')
+            self.stop_button = QPushButton('Detener')
 
-        self.stop_button = Button(button_frame, text="Detener", command=self.stop_audio, state='disabled')
-        self.stop_button.pack(side="left", padx=5)
+            # Establecer un tamaño fijo para todos los botones
+            button_width = 120
+            button_height = 35
+            for button in [self.paste_button, self.generate_button, 
+                        self.play_button, self.stop_button]:
+                button.setFixedSize(button_width, button_height)
 
-        self.audio_logic = AudioLogic()
+            self.play_button.setEnabled(False)
+            self.stop_button.setEnabled(False)
+
+            # Añadir botones al layout con espaciadores
+            button_layout.addStretch(1)
+            button_layout.addWidget(self.paste_button)
+            button_layout.addWidget(self.generate_button)
+            button_layout.addWidget(self.play_button)
+            button_layout.addWidget(self.stop_button)
+            button_layout.addStretch(1)
+
+            layout.addWidget(button_container)
+
+            # Conectar señales
+            self.paste_button.clicked.connect(self.paste_text)
+            self.generate_button.clicked.connect(self.save_audio)
+            self.play_button.clicked.connect(self.play_audio)
+            self.stop_button.clicked.connect(self.stop_audio)
 
     def paste_text(self):
         try:
-            clipboard_text = self.master.clipboard_get()
-            self.text_box.insert("end", clipboard_text)
+            clipboard = QApplication.clipboard()
+            mime_data = clipboard.mimeData()
+
+            if mime_data.hasText():
+                text = clipboard.text()
+                current_text = self.text_edit.toPlainText()
+                
+                # Si hay texto seleccionado, reemplazarlo
+                cursor = self.text_edit.textCursor()
+                if cursor.hasSelection():
+                    cursor.insertText(text)
+                # Si no hay selección, agregar al final o en la posición actual
+                else:
+                    if current_text:
+                        self.text_edit.insertPlainText(text)
+                    else:
+                        self.text_edit.setPlainText(text)
+            else:
+                QMessageBox.warning(self, 'Advertencia', 
+                                'No hay texto disponible para pegar.')
+                
         except Exception as e:
-            messagebox.showerror("Error", "No se pudo obtener el texto del portapapeles.")
+            QMessageBox.critical(self, 'Error', 
+                            f'Error al pegar texto: {str(e)}')
 
     def save_audio(self):
-        text = self.text_box.get("1.0", "end-1c").strip()
+        text = self.text_edit.toPlainText().strip()
         if not text:
-            messagebox.showwarning("Advertencia", "Por favor, ingrese algún texto.")
+            QMessageBox.warning(self, 'Advertencia', 'Por favor, ingrese algún texto.')
             return
 
-        file_path = filedialog.asksaveasfilename(defaultextension=".mp3",
-                                                 filetypes=[("MP3 files", "*.mp3")])
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, 'Guardar audio', '', 'MP3 files (*.mp3)'
+        )
+
         if file_path:
-            try:
-                self.audio_logic.save_audio(text, file_path)
-                self.play_button.config(state='normal')
-                self.stop_button.config(state='normal')
-                messagebox.showinfo("Éxito", f"Audio guardado exitosamente en {file_path}")
-            except ValueError as e:
-                messagebox.showerror("Error", str(e))
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setValue(0)
+            
+            self.conversion_thread = ConversionThread(self.audio_logic, text, file_path)
+            self.conversion_thread.progress.connect(self.update_progress)
+            self.conversion_thread.finished.connect(self.conversion_finished)
+            self.conversion_thread.error.connect(self.show_error)
+            self.conversion_thread.start()
+
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
+
+    def conversion_finished(self):
+        self.progress_bar.setValue(100)
+        self.play_button.setEnabled(True)
+        self.stop_button.setEnabled(True)
+        QMessageBox.information(self, 'Éxito', 'Audio guardado exitosamente')
+        self.progress_bar.setVisible(False)
+
+    def show_error(self, error_message):
+        QMessageBox.critical(self, 'Error', error_message)
+        self.progress_bar.setVisible(False)
 
     def play_audio(self):
         self.audio_logic.play_audio()
@@ -80,9 +226,10 @@ class AudioApp:
         self.audio_logic.stop_audio()
 
 def main():
-    root = Tk()
-    app = AudioApp(root)
-    root.mainloop()
+    app = QApplication(sys.argv)
+    window = AudioApp()
+    window.show()
+    sys.exit(app.exec())
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
